@@ -137,3 +137,33 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+```
+# Hyperledger Fabric
+blockchain/wallet/
+blockchain/network/crypto-config/
+blockchain/network/channel-artifacts/
+*.block
+*.tx
+
+# Environment files
+.env
+.env.local
+.env.production
+backend/.env
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+ai-module/venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
