@@ -1,0 +1,46 @@
+# crypto-config.yaml
+# This file defines ALL identities in our network
+# cryptogen tool reads this and generates certificates for everyone
+# Think of it as: "who gets an ID card and what type"
+
+OrdererOrgs:
+  - Name: Orderer
+    Domain: orderer.landregistry.gov
+    Specs:
+      - Hostname: orderer
+        SANS:
+          - localhost
+
+PeerOrgs:
+  # Org1 — Land Registry Department
+  - Name: RegistryDept
+    Domain: registry.landregistry.gov
+    EnableNodeOUs: true    # Enables peer/admin/client role separation
+    Template:
+      Count: 2             # 2 peer nodes for redundancy
+      SANS:
+        - localhost
+    Users:
+      Count: 3             # 3 users: registrar, citizen, buyer
+
+  # Org2 — Revenue Department
+  - Name: RevenueDept
+    Domain: revenue.landregistry.gov
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+      SANS:
+        - localhost
+    Users:
+      Count: 2
+
+  # Org3 — Banks (mortgage channel only)
+  - Name: BankOrg
+    Domain: bank.landregistry.gov
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+      SANS:
+        - localhost
+    Users:
+      Count: 2

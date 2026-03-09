@@ -1,0 +1,193 @@
+# configtx.yaml
+# Defines channel configurations, policies, and consortium
+# Think of it as: the rules of each courtroom
+
+Organizations:
+  - &OrdererOrg
+    Name: OrdererMSP
+    ID: OrdererMSP
+    MSPDir: organizations/ordererOrganizations/orderer.landregistry.gov/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+
+  - &RegistryDept
+    Name: RegistryDeptMSP
+    ID: RegistryDeptMSP
+    MSPDir: organizations/peerOrganizations/registry.landregistry.gov/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('RegistryDeptMSP.admin', 'RegistryDeptMSP.peer', 'RegistryDeptMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('RegistryDeptMSP.admin', 'RegistryDeptMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('RegistryDeptMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('RegistryDeptMSP.peer')"
+
+  - &RevenueDept
+    Name: RevenueDeptMSP
+    ID: RevenueDeptMSP
+    MSPDir: organizations/peerOrganizations/revenue.landregistry.gov/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('RevenueDeptMSP.admin', 'RevenueDeptMSP.peer', 'RevenueDeptMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('RevenueDeptMSP.admin', 'RevenueDeptMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('RevenueDeptMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('RevenueDeptMSP.peer')"
+
+  - &BankOrg
+    Name: BankOrgMSP
+    ID: BankOrgMSP
+    MSPDir: organizations/peerOrganizations/bank.landregistry.gov/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('BankOrgMSP.admin', 'BankOrgMSP.peer', 'BankOrgMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('BankOrgMSP.admin', 'BankOrgMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('BankOrgMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('BankOrgMSP.peer')"
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.landregistry.gov:7050
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.landregistry.gov
+        Port: 7050
+        ClientTLSCert: organizations/ordererOrganizations/orderer.landregistry.gov/orderers/orderer.orderer.landregistry.gov/tls/server.crt
+        ServerTLSCert: organizations/ordererOrganizations/orderer.landregistry.gov/orderers/orderer.orderer.landregistry.gov/tls/server.crt
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  # Genesis block for the entire network
+  LandRegistryGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Consortiums:
+      LandRegistryConsortium:
+        Organizations:
+          - *RegistryDept
+          - *RevenueDept
+          - *BankOrg
+
+  # Channel 1 — Public land records
+  LandRegistryChannel:
+    Consortium: LandRegistryConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *RegistryDept
+        - *RevenueDept
+
+  # Channel 2 — Private mortgage data (banks only)
+  MortgageChannel:
+    Consortium: LandRegistryConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *RegistryDept
+        - *BankOrg
+
+  # Channel 3 — Internal government approvals
+  GovInternalChannel:
+    Consortium: LandRegistryConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *RegistryDept
+        - *RevenueDept
