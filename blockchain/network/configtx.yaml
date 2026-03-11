@@ -1,7 +1,3 @@
-# configtx.yaml
-# Defines channel configurations, policies, and consortium
-# Think of it as: the rules of each courtroom
-
 Organizations:
   - &OrdererOrg
     Name: OrdererMSP
@@ -104,10 +100,10 @@ Application: &ApplicationDefaults
 Orderer: &OrdererDefaults
   OrdererType: etcdraft
   Addresses:
-    - orderer.landregistry.gov:7050
+    - orderer.orderer.landregistry.gov:7050
   EtcdRaft:
     Consenters:
-      - Host: orderer.landregistry.gov
+      - Host: orderer.orderer.landregistry.gov
         Port: 7050
         ClientTLSCert: organizations/ordererOrganizations/orderer.landregistry.gov/orderers/orderer.orderer.landregistry.gov/tls/server.crt
         ServerTLSCert: organizations/ordererOrganizations/orderer.landregistry.gov/orderers/orderer.orderer.landregistry.gov/tls/server.crt
@@ -148,7 +144,6 @@ Channel: &ChannelDefaults
     <<: *ChannelCapabilities
 
 Profiles:
-  # Genesis block for the entire network
   LandRegistryGenesis:
     <<: *ChannelDefaults
     Orderer:
@@ -162,30 +157,39 @@ Profiles:
           - *RevenueDept
           - *BankOrg
 
-  # Channel 1 — Public land records
   LandRegistryChannel:
-    Consortium: LandRegistryConsortium
     <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Consortium: LandRegistryConsortium
     Application:
       <<: *ApplicationDefaults
       Organizations:
         - *RegistryDept
         - *RevenueDept
 
-  # Channel 2 — Private mortgage data (banks only)
   MortgageChannel:
-    Consortium: LandRegistryConsortium
     <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Consortium: LandRegistryConsortium
     Application:
       <<: *ApplicationDefaults
       Organizations:
         - *RegistryDept
         - *BankOrg
 
-  # Channel 3 — Internal government approvals
   GovInternalChannel:
-    Consortium: LandRegistryConsortium
     <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Consortium: LandRegistryConsortium
     Application:
       <<: *ApplicationDefaults
       Organizations:

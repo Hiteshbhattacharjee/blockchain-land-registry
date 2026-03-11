@@ -1,24 +1,16 @@
-# docker-compose.yaml
-# Defines all the containers that make up our Fabric network
-# Each service = one node in the network
-
-version: '3.7'
-
-volumes:
-  orderer.landregistry.gov:
-  peer0.registry.landregistry.gov:
-  peer1.registry.landregistry.gov:
-  peer0.revenue.landregistry.gov:
-  peer1.revenue.landregistry.gov:
-  peer0.bank.landregistry.gov:
-
 networks:
   landregistry:
     name: landregistry_network
 
+volumes:
+  orderer.orderer.landregistry.gov:
+  peer0.registry.landregistry.gov:
+  peer1.registry.landregistry.gov:
+  peer0.revenue.landregistry.gov:
+  peer0.bank.landregistry.gov:
+
 services:
 
-  # ── Certificate Authority — Registry Dept ──
   ca.registry.landregistry.gov:
     image: hyperledger/fabric-ca:latest
     environment:
@@ -35,7 +27,6 @@ services:
     networks:
       - landregistry
 
-  # ── Certificate Authority — Revenue Dept ──
   ca.revenue.landregistry.gov:
     image: hyperledger/fabric-ca:latest
     environment:
@@ -52,7 +43,6 @@ services:
     networks:
       - landregistry
 
-  # ── Certificate Authority — Bank Org ──
   ca.bank.landregistry.gov:
     image: hyperledger/fabric-ca:latest
     environment:
@@ -69,9 +59,8 @@ services:
     networks:
       - landregistry
 
-  # ── Orderer Node ──
-  orderer.landregistry.gov:
-    container_name: orderer.landregistry.gov
+  orderer.orderer.landregistry.gov:
+    container_name: orderer.orderer.landregistry.gov
     image: hyperledger/fabric-orderer:2.5.9
     environment:
       - FABRIC_LOGGING_SPEC=INFO
@@ -100,7 +89,7 @@ services:
     volumes:
       - ./organizations/ordererOrganizations/orderer.landregistry.gov/orderers/orderer.orderer.landregistry.gov/msp:/var/hyperledger/orderer/msp
       - ./organizations/ordererOrganizations/orderer.landregistry.gov/orderers/orderer.orderer.landregistry.gov/tls:/var/hyperledger/orderer/tls
-      - orderer.landregistry.gov:/var/hyperledger/production/orderer
+      - orderer.orderer.landregistry.gov:/var/hyperledger/production/orderer
     ports:
       - 7050:7050
       - 7053:7053
@@ -108,7 +97,6 @@ services:
     networks:
       - landregistry
 
-  # ── Peer 0 — Registry Dept ──
   peer0.registry.landregistry.gov:
     container_name: peer0.registry.landregistry.gov
     image: hyperledger/fabric-peer:2.5.9
@@ -131,7 +119,6 @@ services:
       - CORE_PEER_LOCALMSPID=RegistryDeptMSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
       - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:17051
-      - CORE_METRICS_PROVIDER=prometheus
     volumes:
       - ./organizations/peerOrganizations/registry.landregistry.gov/peers/peer0.registry.landregistry.gov/msp:/etc/hyperledger/fabric/msp
       - ./organizations/peerOrganizations/registry.landregistry.gov/peers/peer0.registry.landregistry.gov/tls:/etc/hyperledger/fabric/tls
@@ -145,7 +132,6 @@ services:
     networks:
       - landregistry
 
-  # ── Peer 1 — Registry Dept ──
   peer1.registry.landregistry.gov:
     container_name: peer1.registry.landregistry.gov
     image: hyperledger/fabric-peer:2.5.9
@@ -180,7 +166,6 @@ services:
     networks:
       - landregistry
 
-  # ── Peer 0 — Revenue Dept ──
   peer0.revenue.landregistry.gov:
     container_name: peer0.revenue.landregistry.gov
     image: hyperledger/fabric-peer:2.5.9
@@ -197,7 +182,6 @@ services:
       - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
       - CORE_PEER_CHAINCODEADDRESS=peer0.revenue.landregistry.gov:9052
       - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.revenue.landregistry.gov:10051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.revenue.landregistry.gov:9051
       - CORE_PEER_LOCALMSPID=RevenueDeptMSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
@@ -215,7 +199,6 @@ services:
     networks:
       - landregistry
 
-  # ── Peer 0 — Bank Org ──
   peer0.bank.landregistry.gov:
     container_name: peer0.bank.landregistry.gov
     image: hyperledger/fabric-peer:2.5.9
@@ -249,7 +232,6 @@ services:
     networks:
       - landregistry
 
-  # ── CLI Tool — for running admin commands ──
   cli:
     container_name: cli
     image: hyperledger/fabric-tools:2.5.9
