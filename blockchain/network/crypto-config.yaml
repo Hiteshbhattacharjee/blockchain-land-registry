@@ -8,8 +8,11 @@ OrdererOrgs:
     Domain: orderer.landregistry.gov
     Specs:
       - Hostname: orderer
+        CommonName: orderer.orderer.landregistry.gov
         SANS:
           - localhost
+          - orderer.landregistry.gov
+          - orderer.orderer.landregistry.gov
 
 PeerOrgs:
   # Org1 — Land Registry Department

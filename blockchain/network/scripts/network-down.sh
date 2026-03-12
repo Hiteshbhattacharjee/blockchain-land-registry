@@ -9,7 +9,7 @@ echo -e "${RED}Bringing down Land Registry Network...${NC}"
 
 cd "$(dirname "$0")/.."
 
-docker-compose down --volumes --remove-orphans
+docker compose down --volumes --remove-orphans
 
 echo -e "${GREEN}✓ All containers stopped and volumes removed${NC}"
 

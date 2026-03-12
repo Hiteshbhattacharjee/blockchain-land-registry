@@ -66,7 +66,7 @@ echo -e "${GREEN}✓ gov-internal-channel.tx created${NC}"
 # ── STEP 3: Start Docker containers ──
 echo -e "\n${YELLOW}Step 3: Starting Docker containers...${NC}"
 
-docker-compose up -d
+docker compose up -d
 
 echo -e "${GREEN}✓ Docker containers started${NC}"
 
