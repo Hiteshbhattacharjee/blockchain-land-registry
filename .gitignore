@@ -168,3 +168,5 @@ Thumbs.db
 # IDE
 .vscode/settings.json
 blockchain/chaincode/land-registry/vendor/
+
+blockchain/chaincode/land-registry/vendor/
