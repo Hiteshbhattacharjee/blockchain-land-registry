@@ -49,4 +49,45 @@ async function registerLand(landData) {
     }
 }
 
-module.exports = { getLand, registerLand };
+async function transferOwnership(transferData) {
+    const { gateway, client } = await connectToFabric();
+    try {
+        const network = gateway.getNetwork(CHANNEL_NAME);
+        const contract = network.getContract(CHAINCODE_NAME);
+        await contract.submitTransaction(
+            'TransferOwnership',
+            transferData.landId,
+            transferData.newOwnerName,
+            transferData.newOwnerAadhaarHash,
+            transferData.transferType,
+            String(transferData.saleValue || 0),
+            String(transferData.stampDuty || 0),
+            String(transferData.registrationFee || 0),
+            transferData.sellerSignature,
+            transferData.buyerSignature,
+            transferData.ipfsDocHash || '',
+            String(transferData.fraudScore || 0.0),
+            transferData.fraudFlags || '[]'
+        );
+        return { success: true, landId: transferData.landId, newOwner: transferData.newOwnerName };
+    } finally {
+        gateway.close();
+        client.close();
+    }
+}
+
+async function getLandHistory(landId) {
+    const { gateway, client } = await connectToFabric();
+    try {
+        const network = gateway.getNetwork(CHANNEL_NAME);
+        const contract = network.getContract(CHAINCODE_NAME);
+        const resultBytes = await contract.evaluateTransaction('GetLandHistory', landId);
+        const result = Buffer.from(resultBytes).toString();
+        return result ? JSON.parse(result) : [];
+    } finally {
+        gateway.close();
+        client.close();
+    }
+}
+
+module.exports = { getLand, registerLand, transferOwnership, getLandHistory };
