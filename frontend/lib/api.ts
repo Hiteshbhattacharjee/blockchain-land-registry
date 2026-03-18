@@ -67,6 +67,11 @@ export async function getAllLands(filters?: Record<string, string>): Promise<Lan
   return res.data.data.map(normalize);
 }
 
+export async function getLandHistory(landId: string): Promise<unknown[]> {
+  const res = await axios.get(`${API_BASE}/land/history/${landId}`);
+  return res.data.data;
+}
+
 export async function registerLand(data: Partial<LandRecord>): Promise<{ success: boolean; landId: string }> {
   const res = await axios.post(`${API_BASE}/land/register`, data);
   return res.data.data;
