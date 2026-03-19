@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getLand, getLandHistory, LandRecord } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:3001/api';
@@ -26,13 +27,15 @@ interface TransferRecord {
 export default function LandDetail() {
   const { id } = useParams();
   const router = useRouter();
+  const { user, token, mounted } = useAuth();
   const [land, setLand] = useState<LandRecord | null>(null);
   const [history, setHistory] = useState<TransferRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'history' | 'transfer'>('details');
+  const [approving, setApproving] = useState(false);
+  const [approveMsg, setApproveMsg] = useState('');
 
-  // Transfer form state
   const [transferForm, setTransferForm] = useState({
     newOwnerName: '',
     newOwnerAadhaarHash: '',
@@ -65,19 +68,32 @@ export default function LandDetail() {
     }
   }, [id]);
 
+  const handleApprove = async () => {
+    setApproving(true);
+    setApproveMsg('');
+    try {
+      await axios.post(`${API_BASE}/land/approve`,
+        { landId: id, approvalNotes: 'Approved by registrar' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setApproveMsg('✅ Land approved successfully! Refreshing...');
+      setTimeout(() => window.location.reload(), 2000);
+    } catch {
+      setApproveMsg('❌ Approval failed. Please try again.');
+    } finally {
+      setApproving(false);
+    }
+  };
+
   const handleTransfer = async () => {
     setTransferLoading(true);
     setTransferError('');
     setTransferSuccess('');
     try {
-      await axios.post(`${API_BASE}/land/transfer`, {
-        landId: id,
-        ...transferForm,
-        saleValue: Number(transferForm.saleValue),
-        stampDuty: Number(transferForm.stampDuty),
-        registrationFee: Number(transferForm.registrationFee),
-        fraudScore: Number(transferForm.fraudScore),
-      });
+      await axios.post(`${API_BASE}/land/transfer`,
+        { landId: id, ...transferForm, saleValue: Number(transferForm.saleValue), stampDuty: Number(transferForm.stampDuty), registrationFee: Number(transferForm.registrationFee), fraudScore: Number(transferForm.fraudScore) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setTransferSuccess(`Ownership transferred to ${transferForm.newOwnerName} on blockchain!`);
       setTimeout(() => window.location.reload(), 2000);
     } catch (err: unknown) {
@@ -117,20 +133,24 @@ export default function LandDetail() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-blue-900 text-white py-6 px-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
-          <button onClick={() => router.push('/')} className="text-blue-200 hover:text-white">← Back</button>
-          <div>
-            <h1 className="text-2xl font-bold">Land Record — {land.landId}</h1>
-            <p className="text-blue-200 text-sm">Verified on Hyperledger Fabric Blockchain</p>
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.push('/')} className="text-blue-200 hover:text-white">← Back</button>
+            <div>
+              <h1 className="text-2xl font-bold">Land Record — {land.landId}</h1>
+              <p className="text-blue-200 text-sm">Verified on Hyperledger Fabric Blockchain</p>
+            </div>
           </div>
+          {mounted && user && (
+            <span className="text-blue-200 text-sm">👤 {user.name}</span>
+          )}
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Status Banner */}
-        <div className={`border rounded-xl p-4 flex items-center justify-between mb-6 ${getStatusColor(land.status)}`}>
+        <div className={`border rounded-xl p-4 flex items-center justify-between mb-4 ${getStatusColor(land.status)}`}>
           <div className="flex items-center gap-3">
             <span className="text-2xl">
               {land.status === 'ACTIVE' ? '✅' : land.status === 'PENDING' ? '⏳' : '⚠️'}
@@ -146,6 +166,26 @@ export default function LandDetail() {
             {land.disputeFlag && <p className="text-orange-600">⚠️ Disputed</p>}
           </div>
         </div>
+
+        {/* Approve Button for Registrar */}
+        {mounted && user?.role === 'registrar' && land.status === 'PENDING' && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-yellow-800">⏳ Pending Approval</p>
+              <p className="text-yellow-600 text-sm">This land is awaiting registrar approval</p>
+            </div>
+            <button
+              onClick={handleApprove}
+              disabled={approving}
+              className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50"
+            >
+              {approving ? 'Approving...' : '✅ Approve Land'}
+            </button>
+          </div>
+        )}
+        {approveMsg && (
+          <p className="text-sm p-3 rounded-lg mb-4 bg-green-50 text-green-700 font-semibold">{approveMsg}</p>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b">
@@ -227,12 +267,8 @@ export default function LandDetail() {
                   <div key={record.transferId} className="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
-                          Transfer #{index + 1}
-                        </span>
-                        <span className="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                          {record.transferType}
-                        </span>
+                        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Transfer #{index + 1}</span>
+                        <span className="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">{record.transferType}</span>
                       </div>
                       <p className="text-gray-400 text-sm">{new Date(record.timestamp).toLocaleDateString('en-IN')}</p>
                     </div>
@@ -263,17 +299,21 @@ export default function LandDetail() {
             <h2 className="font-bold text-gray-700 mb-1">🔄 Transfer Ownership</h2>
             <p className="text-gray-400 text-sm mb-6">This action is permanent and recorded on blockchain</p>
 
-            {land.status !== 'ACTIVE' && (
+            {!mounted || !user ? (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-yellow-700 font-semibold">⚠️ Login required to transfer ownership</p>
+                <button onClick={() => router.push('/login')} className="mt-2 bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">Login as Registrar</button>
+              </div>
+            ) : land.status !== 'ACTIVE' ? (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                 <p className="text-yellow-700 font-semibold">⚠️ Land must be ACTIVE to transfer</p>
                 <p className="text-yellow-600 text-sm">Current status: {land.status}</p>
               </div>
-            )}
+            ) : null}
 
             <div className="grid grid-cols-2 gap-4">
               {[
                 { label: 'New Owner Name *', key: 'newOwnerName', placeholder: 'Full name' },
-                { label: 'Transfer Type', key: 'transferType', placeholder: '' },
                 { label: 'New Owner Aadhaar Hash *', key: 'newOwnerAadhaarHash', placeholder: '64-char hex' },
                 { label: 'Sale Value (₹) *', key: 'saleValue', placeholder: 'e.g. 5500000' },
                 { label: 'Stamp Duty (₹)', key: 'stampDuty', placeholder: 'e.g. 55000' },
@@ -283,33 +323,30 @@ export default function LandDetail() {
                 { label: 'IPFS Document Hash', key: 'ipfsDocHash', placeholder: 'Qm...' },
                 { label: 'Fraud Score (0-1)', key: 'fraudScore', placeholder: '0.1' },
               ].map(({ label, key, placeholder }) => (
-                key === 'transferType' ? (
-                  <div key={key}>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
-                    <select
-                      value={transferForm.transferType}
-                      onChange={(e) => setTransferForm({ ...transferForm, transferType: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option>SALE</option>
-                      <option>GIFT</option>
-                      <option>INHERITANCE</option>
-                      <option>COURT_ORDER</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div key={key}>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
-                    <input
-                      type="text"
-                      value={transferForm[key as keyof typeof transferForm]}
-                      onChange={(e) => setTransferForm({ ...transferForm, [key]: e.target.value })}
-                      placeholder={placeholder}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                )
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    value={transferForm[key as keyof typeof transferForm]}
+                    onChange={(e) => setTransferForm({ ...transferForm, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Transfer Type</label>
+                <select
+                  value={transferForm.transferType}
+                  onChange={(e) => setTransferForm({ ...transferForm, transferType: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option>SALE</option>
+                  <option>GIFT</option>
+                  <option>INHERITANCE</option>
+                  <option>COURT_ORDER</option>
+                </select>
+              </div>
             </div>
 
             {transferError && <p className="text-red-500 text-sm bg-red-50 p-3 rounded-lg mt-4">{transferError}</p>}
@@ -317,7 +354,7 @@ export default function LandDetail() {
 
             <button
               onClick={handleTransfer}
-              disabled={transferLoading || land.status !== 'ACTIVE'}
+              disabled={transferLoading || land.status !== 'ACTIVE' || !user}
               className="w-full mt-6 bg-blue-700 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-50 text-lg"
             >
               {transferLoading ? '⏳ Submitting to Blockchain...' : '⛓️ Transfer Ownership on Blockchain'}

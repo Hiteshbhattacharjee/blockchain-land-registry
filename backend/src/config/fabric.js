@@ -18,24 +18,11 @@ function getKeyPath() {
 }
 
 function getCertPath() {
-    return path.join(
-        CRYPTO_PATH,
-        'users',
-        'Admin@registry.landregistry.gov',
-        'msp',
-        'signcerts',
-        'Admin@registry.landregistry.gov-cert.pem'
-    );
+    return path.join(CRYPTO_PATH, 'users', 'Admin@registry.landregistry.gov', 'msp', 'signcerts', 'Admin@registry.landregistry.gov-cert.pem');
 }
 
 function getTLSCertPath() {
-    return path.join(
-        CRYPTO_PATH,
-        'peers',
-        'peer0.registry.landregistry.gov',
-        'tls',
-        'ca.crt'
-    );
+    return path.join(CRYPTO_PATH, 'peers', 'peer0.registry.landregistry.gov', 'tls', 'ca.crt');
 }
 
 async function newGrpcConnection() {
@@ -64,6 +51,9 @@ async function connectToFabric() {
         identity: await newIdentity(),
         signer: await newSigner(),
         hash: hash.sha256,
+        endorseTimeout: 30000,
+        submitTimeout: 30000,
+        broadcastTimeout: 30000,
     });
     return { gateway, client };
 }
