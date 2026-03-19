@@ -18,6 +18,8 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+const uploadRoutes = require('./routes/upload');
+app.use('/api/upload', uploadRoutes);
 
 app.use('/api/land', (req, res, next) => {
     if (req.method === 'POST') {
