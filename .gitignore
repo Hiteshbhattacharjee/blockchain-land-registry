@@ -170,3 +170,7 @@ Thumbs.db
 blockchain/chaincode/land-registry/vendor/
 
 blockchain/chaincode/land-registry/vendor/
+blockchain/network/organizations/
+blockchain/network/channel-artifacts/
+blockchain/network/organizations/
+blockchain/network/channel-artifacts/

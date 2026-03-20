@@ -330,7 +330,7 @@ export default function LandDetail() {
                     value={transferForm[key as keyof typeof transferForm]}
                     onChange={(e) => setTransferForm({ ...transferForm, [key]: e.target.value })}
                     placeholder={placeholder}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
                   />
                 </div>
               ))}
@@ -339,7 +339,7 @@ export default function LandDetail() {
                 <select
                   value={transferForm.transferType}
                   onChange={(e) => setTransferForm({ ...transferForm, transferType: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
                 >
                   <option>SALE</option>
                   <option>GIFT</option>
